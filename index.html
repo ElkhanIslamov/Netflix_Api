@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TVMaze - Netflix Style</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #141414;
+      color: #fff;
+    }
+    header {
+      display: flex;
+      flex-direction: column;
+      background-color: #111;
+      padding: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .logo-nav {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #e50914;
+      cursor: pointer;
+    }
+    nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    nav a {
+      text-decoration: none;
+      color: #bbb;
+      transition: color 0.3s ease;
+    }
+    nav a.active, nav a:hover {
+      color: #fff;
+      font-weight: bold;
+    }
+    .search-bar {
+      margin-top: 10px;
+    }
+    .search-bar input {
+      padding: 10px;
+      width: 300px;
+      border: none;
+      border-radius: 5px;
+    }
+    .movies-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      padding: 20px;
+    }
+    .movie {
+      text-align: center;
+      cursor: pointer;
+    }
+    .movie img {
+      width: 100px;
+      height: auto;
+      border-radius: 5px;
+      transition: transform 0.2s;
+    }
+    .movie img:hover {
+      transform: scale(1.05);
+    }
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .pagination button {
+      background-color: #e50914;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      margin: 0 5px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.9);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .modal-content {
+      background: #222;
+      padding: 20px;
+      max-width: 600px;
+      width: 90%;
+      border-radius: 10px;
+      color: white;
+    }
+    .close-btn {
+      background: transparent;
+      color: white;
+      border: none;
+      font-size: 24px;
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      cursor: pointer;
+    }
+    .watch-btn {
+      display: inline-block;
+      margin-top: 15px;
+      background: #e50914;
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-top">
+      <div class="logo-nav">
+        <div class="logo" onclick="location.href=''">Netflix-Academy</div>
+        <nav id="genreNav">
+          <a href="#" class="active" onclick="filterGenre(null, this)">Home</a>
+          <a href="#" onclick="filterGenre('Action', this)">Action</a>
+          <a href="#" onclick="filterGenre('Comedy', this)">Comedy</a>
+          <a href="#" onclick="filterGenre('Drama', this)">Drama</a>
+          <a href="#" onclick="filterGenre('Fantasy', this)">Fantasy</a>
+        </nav>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search shows..." />
+      </div>
+    </div>
+  </header>
+
+  <div class="movies-grid" id="shows-container"></div>
+  <div class="pagination">
+    <button id="prevBtn">← Previous</button>
+    <button id="nextBtn">Next →</button>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal()">×</button>
+      <h3 id="modalTitle"></h3>
+      <p><strong>Genres:</strong> <span id="modalGenres"></span></p>
+      <p><strong>Language:</strong> <span id="modalLanguage"></span></p>
+      <p><strong>Rating:</strong> <span id="modalRating"></span></p>
+      <p><strong>Summary:</strong></p>
+      <p id="modalSummary"></p>
+      <a id="watchNowBtn" class="watch-btn" href="#" target="_blank">Watch Now</a>
+    </div>
+  </div>
+
+  <script>
+    let shows = [];
+    let currentPage = 1;
+    const showsPerPage = 8;
+    const container = document.getElementById('shows-container');
+
+    async function fetchShows() {
+      const res = await fetch('https://api.tvmaze.com/shows');
+      shows = await res.json();
+      displayShows();
+    }
+
+    function displayShows() {
+      const start = (currentPage - 1) * showsPerPage;
+      const end = start + showsPerPage;
+      container.innerHTML = '';
+      shows.slice(start, end).forEach(show => {
+        const div = document.createElement('div');
+        div.className = 'movie';
+        div.innerHTML = `<img src="${show.image?.medium || ''}" alt="${show.name}"><p>${show.name}</p>`;
+        div.onclick = () => showDetails(show);
+        container.appendChild(div);
+      });
+    }
+
+    function showDetails(show) {
+      document.getElementById('modalTitle').textContent = show.name;
+      document.getElementById('modalGenres').textContent = show.genres.join(', ');
+      document.getElementById('modalLanguage').textContent = show.language;
+      document.getElementById('modalRating').textContent = show.rating.average || 'N/A';
+      document.getElementById('modalSummary').innerHTML = show.summary;
+      document.getElementById('watchNowBtn').href = show.url;
+      document.getElementById('modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').style.display = 'none';
+    }
+
+    document.getElementById('nextBtn').onclick = () => {
+      if ((currentPage * showsPerPage) < shows.length) {
+        currentPage++;
+        displayShows();
+      }
+    };
+
+    document.getElementById('prevBtn').onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        displayShows();
+      }
+    };
+
+    document.getElementById('searchInput').addEventListener('input', function () {
+      const keyword = this.value.toLowerCase();
+      const filtered = shows.filter(show => show.name.toLowerCase().includes(keyword));
+      container.innerHTML = '';
+      filtered.slice(0, showsPerPage).forEach(show => {
+        const div = document.createElement('div');
+        div.className = 'movie';
+        div.innerHTML = `<img src="${show.image?.medium || ''}" alt="${show.name}"><p>${show.name}</p>`;
+        div.onclick = () => showDetails(show);
+        container.appendChild(div);
+      });
+    });
+
+    function filterGenre(genre, link) {
+      document.querySelectorAll('#genreNav a').forEach(a => a.classList.remove('active'));
+      link.classList.add('active');
+      if (!genre) return displayShows();
+      const filtered = shows.filter(s => s.genres.includes(genre));
+      container.innerHTML = '';
+      filtered.slice(0, showsPerPage).forEach(show => {
+        const div = document.createElement('div');
+        div.className = 'movie';
+        div.innerHTML = `<img src="${show.image?.medium || ''}" alt="${show.name}"><p>${show.name}</p>`;
+        div.onclick = () => showDetails(show);
+        container.appendChild(div);
+      });
+    }
+
+    fetchShows();
+  </script>
+</body>
+</html>
