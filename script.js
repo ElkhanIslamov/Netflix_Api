@@ -82,6 +82,7 @@ function showDetails(show) {
   document.getElementById('modalGenres').textContent = show.genres.join(', ');
   document.getElementById('modalLanguage').textContent = show.language;
   document.getElementById('modalRating').textContent = show.rating.average || 'N/A';
+  document.getElementById('modalPremiered').textContent = show.premiered || 'N/A';
   document.getElementById('modalSummary').innerHTML = show.summary;
   document.getElementById('watchNowBtn').href = show.url;
   document.getElementById('modal').style.display = 'flex';
@@ -134,5 +135,17 @@ backToTopBtn.addEventListener('click', () => {
     behavior: 'smooth'
   });
 });
+const scrollContainer = document.querySelector('.movies-scroll-container');
+
+scrollContainer.addEventListener('scroll', () => {
+  const threshold = scrollContainer.scrollHeight - 300;
+  if (!isLoading && scrollContainer.scrollTop + scrollContainer.clientHeight >= threshold) {
+    isLoading = true;
+    currentPage++;
+    const filtered = getFilteredShows();
+    renderShows(filtered);
+  }
+});
+
 
 fetchShows();
